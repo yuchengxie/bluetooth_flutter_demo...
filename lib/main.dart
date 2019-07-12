@@ -1,111 +1,230 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:toast/toast.dart';
 
-void main() => runApp(MyApp());
-
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+void main() {
+  runApp(MaterialApp(
+    initialRoute: '/',
+    routes: {
+      '/': (context) => MyApp(),
+    },
+    theme: ThemeData(
+      brightness: Brightness.dark,
+      // accentColor: Colors.cyan,
+      buttonTheme: ButtonThemeData(
+        height: 40,
+        // highlightColor: Colors.cyan,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
+    ),
+  ));
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+TextEditingController bleNameController;
+TextEditingController pinCodeController;
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
+class MyApp extends StatefulWidget {
+  MyApp({Key key}) : super(key: key);
 
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+  _MyAppState createState() => _MyAppState();
+}
 
-  final String title;
+class _MyAppState extends State<MyApp> {
+  static const MethodChannel methodChannel = MethodChannel('hzf.bluetooth');
+  static const EventChannel eventChannel = EventChannel('hzf.bluetoothState');
+  String _connectState;
+
+  Future<void> _connectBlueTooth(String a, String b) async {
+    String connectState = '';
+    try {
+      final String s =
+          await methodChannel.invokeMethod('connectBlueTooth', [a, b]);
+      // connectState = '连接结果:$result';
+      this._showToast("connectBlueTooth返回$s", duration: 3, gravity: Toast.TOP);
+    } on PlatformException {
+      connectState = 'bluetooth connect error';
+    }
+    setState(() {
+      // this._connectState = connectState;
+    });
+  }
+
+  Future<void> _disConnectBlueTooth() async {
+    String connectState = '';
+    try {
+      final int result =
+          await methodChannel.invokeMethod('disConnectBlueTooth');
+      connectState = '连接结果:$result';
+    } on PlatformException {
+      connectState = 'bluetooth connect error';
+    }
+    setState(() {
+      this._connectState = connectState;
+    });
+  }
+
+  Future<void> _selectApp() async {
+    try {
+      print('dark调用_selectApp');
+      String s = await methodChannel.invokeMethod('selectApp');
+      print('接收到返回s:$s');
+      this._showToast("selectApp返回$s", duration: 3, gravity: Toast.TOP);
+    } on PlatformException {}
+  }
+
+  Future<void> _verifPIN() async {
+    try {
+      print('dark调用_verifyPIN');
+      String s = await methodChannel.invokeMethod('verifPIN');
+      print('接收到返回s:$s');
+      this._showToast("verifypin返回$s", duration: 3, gravity: Toast.TOP);
+    } on PlatformException {}
+  }
+
+  void _showToast(String msg, {int duration, int gravity}) {
+    Toast.show(msg, context, duration: duration, gravity: gravity);
+  }
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    bleNameController = TextEditingController();
+    pinCodeController = TextEditingController();
+    bleNameController.text = "BLESIM111111";
+    pinCodeController.text = "123456";
+    this._connectState = '请连接蓝牙';
+    print('state:${this._connectState}');
+    eventChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
+  }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
+  _onEvent(Object event) {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _connectState = '$event';
+    });
+  }
+  
+  _onError(Object error) {
+    setState(() {
+      _connectState = '连接状态:unknow';
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text('蓝牙SIM'),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: Container(
+        margin: EdgeInsets.all(10),
         child: Column(
-          // Column is also layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
+            SizedBox(
+              height: 20,
+            ),
+            TextField(
+              controller: bleNameController,
+              decoration: InputDecoration(
+                prefixIcon: Icon(Icons.bluetooth),
+                hintText: '请输入蓝牙设备名称',
+              ),
+            ),
+            TextField(
+              controller: pinCodeController,
+              decoration: InputDecoration(
+                prefixIcon: Icon(Icons.payment),
+                hintText: '请输入pin码',
+              ),
+            ),
+            SizedBox(
+              height: 30,
+            ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlineButton(
+                    child: Text('连 接 蓝 牙'),
+                    highlightedBorderColor: Colors.cyan,
+                    borderSide: BorderSide(
+                      width: 1,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      this._connectBlueTooth(
+                          bleNameController.text, pinCodeController.text);
+                    },
+                  ),
+                )
+              ],
+            ),
+            SizedBox(
+              height: 10,
+            ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlineButton(
+                    child: Text('断 开 蓝 牙'),
+                    highlightedBorderColor: Colors.cyan,
+                    borderSide: BorderSide(
+                      width: 1,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      this._disConnectBlueTooth();
+                    },
+                  ),
+                )
+              ],
+            ),
+            SizedBox(
+              height: 15,
             ),
             Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
+              this._connectState,
+              style: TextStyle(
+                color: Colors.cyan,
+            ),),
+            SizedBox(
+              height: 25,
+            ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlineButton(
+                    child: Text('选 择 应 用'),
+                    highlightedBorderColor: Colors.cyan,
+                    borderSide: BorderSide(
+                      width: 1,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      this._selectApp();
+                    },
+                  ),
+                )
+              ],
+            ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlineButton(
+                    child: Text('验 证 PIN 码'),
+                    highlightedBorderColor: Colors.cyan,
+                    borderSide: BorderSide(
+                      width: 1,
+                      color: Colors.white,
+                    ),
+                    onPressed: () {
+                      this._verifPIN();
+                    },
+                  ),
+                )
+              ],
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
