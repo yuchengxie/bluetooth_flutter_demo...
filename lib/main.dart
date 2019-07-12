@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:toast/toast.dart';
 
+String appSelectID = "D196300077130010000000020101";
+String pinCode = "0020000003000000";
+
 void main() {
   runApp(MaterialApp(
     initialRoute: '/',
@@ -62,21 +65,18 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  Future<void> _selectApp() async {
+  Future<void> _selectApp(String appSelectID) async {
     try {
-      print('dark调用_selectApp');
-      String s = await methodChannel.invokeMethod('selectApp');
-      print('接收到返回s:$s');
-      this._showToast("selectApp返回$s", duration: 3, gravity: Toast.TOP);
+      String s = await methodChannel.invokeMethod('selectApp', [appSelectID]);
+      this._showToast("$s", duration: 3, gravity: Toast.TOP);
     } on PlatformException {}
   }
 
-  Future<void> _verifPIN() async {
+  Future<void> _verifPIN(String pincode) async {
     try {
-      print('dark调用_verifyPIN');
-      String s = await methodChannel.invokeMethod('verifPIN');
+      String s = await methodChannel.invokeMethod('verifPIN',[pincode]);
       print('接收到返回s:$s');
-      this._showToast("verifypin返回$s", duration: 3, gravity: Toast.TOP);
+      this._showToast("$s", duration: 3, gravity: Toast.TOP);
     } on PlatformException {}
   }
 
@@ -102,7 +102,7 @@ class _MyAppState extends State<MyApp> {
       _connectState = '$event';
     });
   }
-  
+
   _onError(Object error) {
     setState(() {
       _connectState = '连接状态:unknow';
@@ -184,7 +184,8 @@ class _MyAppState extends State<MyApp> {
               this._connectState,
               style: TextStyle(
                 color: Colors.cyan,
-            ),),
+              ),
+            ),
             SizedBox(
               height: 25,
             ),
@@ -199,7 +200,7 @@ class _MyAppState extends State<MyApp> {
                       color: Colors.white,
                     ),
                     onPressed: () {
-                      this._selectApp();
+                      this._selectApp(appSelectID);
                     },
                   ),
                 )
@@ -216,7 +217,7 @@ class _MyAppState extends State<MyApp> {
                       color: Colors.white,
                     ),
                     onPressed: () {
-                      this._verifPIN();
+                      this._verifPIN(pinCode);
                     },
                   ),
                 )
